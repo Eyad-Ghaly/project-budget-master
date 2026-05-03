@@ -38,11 +38,11 @@ export function CostDistributionChart({ data }: CostDistributionChartProps) {
             </Pie>
             <Tooltip
               contentStyle={{
-                backgroundColor: 'hsl(220, 18%, 13%)',
-                border: '1px solid hsl(220, 14%, 20%)',
+                backgroundColor: '#fff',
+                border: '1px solid hsl(220, 14%, 85%)',
                 borderRadius: '8px',
                 fontSize: '12px',
-                color: 'hsl(210, 20%, 92%)',
+                color: 'hsl(220, 20%, 12%)',
               }}
               formatter={(value: number) => new Intl.NumberFormat('en-US').format(value)}
             />
