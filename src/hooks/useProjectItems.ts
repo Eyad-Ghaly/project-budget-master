@@ -50,7 +50,8 @@ export function useProjectItems<T extends { id: string }>(
       toast({ title: 'خطأ في الإضافة', description: error.message, variant: 'destructive' });
       return null;
     }
-    setItems(prev => [...prev, data as T]);
+    const newItem = data as unknown as T;
+    setItems(prev => [...prev, newItem]);
     return data as T;
   };
 
