@@ -6,6 +6,9 @@ import { MATERIAL_SUB_CATEGORIES, INDIRECT_COST_SUB_CATEGORIES, INDIRECT_MANPOWE
 import { formatCurrency } from '@/lib/formatters';
 import { calculateSummary } from '@/types/project';
 import { SummaryPanel } from '@/components/SummaryPanel';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const steps = [
   { id: 1, title: 'Project Info' },
