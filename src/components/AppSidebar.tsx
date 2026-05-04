@@ -60,6 +60,15 @@ export function AppSidebar() {
         })}
       </nav>
 
+      {/* Logout */}
+      <button
+        onClick={signOut}
+        className="flex items-center gap-3 px-3 py-2.5 mx-2 mb-2 rounded-md text-sm text-destructive hover:bg-destructive/10 transition-colors"
+      >
+        <LogOut className="w-4 h-4 shrink-0" />
+        {!collapsed && <span>تسجيل خروج</span>}
+      </button>
+
       {/* Collapse Toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
