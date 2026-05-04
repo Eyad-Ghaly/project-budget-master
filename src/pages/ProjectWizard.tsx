@@ -201,11 +201,43 @@ export default function ProjectWizard() {
               </button>
             ) : (
               <button
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-accent text-accent-foreground hover:opacity-90 transition-opacity font-medium"
+                disabled={submitting}
+                onClick={async () => {
+                  if (!user) return;
+                  setSubmitting(true);
+                  const { error } = await supabase.from('projects').insert({
+                    user_id: user.id,
+                    cost_center_number: form.cost_center_number,
+                    cost_center_name: form.cost_center_name,
+                    project_name: form.project_name,
+                    revision_number: form.revision_number,
+                    revision_date: form.revision_date,
+                    currency: form.currency,
+                    project_revenue: form.project_revenue,
+                    pm_target: form.pm_target / 100,
+                    om_target: form.om_target / 100,
+                    md_target: form.md_target / 100,
+                    materials: costs.materials,
+                    subcontractors: costs.subcontractors,
+                    direct_manpower: costs.direct_manpower,
+                    direct_equipment: costs.direct_equipment,
+                    services: costs.services,
+                    indirect_manpower: costs.indirect_manpower,
+                    indirect_cost: costs.indirect_cost,
+                    overheads: costs.overheads,
+                  } as any);
+                  setSubmitting(false);
+                  if (error) {
+                    toast({ title: 'خطأ في الحفظ', description: error.message, variant: 'destructive' });
+                  } else {
+                    toast({ title: 'تم حفظ المشروع بنجاح' });
+                    navigate('/');
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-accent text-accent-foreground hover:opacity-90 transition-opacity font-medium disabled:opacity-50"
               >
                 <Check className="w-4 h-4" />
-                Submit Budget
+                {submitting ? 'جاري الحفظ...' : 'Submit Budget'}
               </button>
             )}
           </div>
