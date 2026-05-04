@@ -14,6 +14,333 @@ export type Database = {
   }
   public: {
     Tables: {
+      boq_items: {
+        Row: {
+          block: string
+          construction_equipment: number
+          contingencies: number
+          created_at: string
+          description: string
+          direct_manpower: number
+          discipline: string
+          id: string
+          indirect_cost: number
+          indirect_manpower: number
+          item_code: string
+          logistics: number
+          overheads: number
+          profit: number
+          project_id: string
+          quantity: number
+          selling_price: number
+          specification: string
+          subcontract_construction: number
+          subcontract_engineering: number
+          supply_materials: number
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          block?: string
+          construction_equipment?: number
+          contingencies?: number
+          created_at?: string
+          description?: string
+          direct_manpower?: number
+          discipline?: string
+          id?: string
+          indirect_cost?: number
+          indirect_manpower?: number
+          item_code?: string
+          logistics?: number
+          overheads?: number
+          profit?: number
+          project_id: string
+          quantity?: number
+          selling_price?: number
+          specification?: string
+          subcontract_construction?: number
+          subcontract_engineering?: number
+          supply_materials?: number
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          block?: string
+          construction_equipment?: number
+          contingencies?: number
+          created_at?: string
+          description?: string
+          direct_manpower?: number
+          discipline?: string
+          id?: string
+          indirect_cost?: number
+          indirect_manpower?: number
+          item_code?: string
+          logistics?: number
+          overheads?: number
+          profit?: number
+          project_id?: string
+          quantity?: number
+          selling_price?: number
+          specification?: string
+          subcontract_construction?: number
+          subcontract_engineering?: number
+          supply_materials?: number
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boq_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      direct_equipment_items: {
+        Row: {
+          amount: number
+          created_at: string
+          discipline: string
+          equipment_name: string
+          id: string
+          project_id: string
+          quantity: number
+          unit: string
+          unit_cost: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          discipline?: string
+          equipment_name?: string
+          id?: string
+          project_id: string
+          quantity?: number
+          unit?: string
+          unit_cost?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          discipline?: string
+          equipment_name?: string
+          id?: string
+          project_id?: string
+          quantity?: number
+          unit?: string
+          unit_cost?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_equipment_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      direct_manpower_items: {
+        Row: {
+          amount: number
+          created_at: string
+          discipline: string
+          id: string
+          manweeks: number
+          project_id: string
+          rate_per_week: number
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          discipline?: string
+          id?: string
+          manweeks?: number
+          project_id: string
+          rate_per_week?: number
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          discipline?: string
+          id?: string
+          manweeks?: number
+          project_id?: string
+          rate_per_week?: number
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_manpower_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      indirect_cost_items: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          item_name: string
+          notes: string
+          project_id: string
+          sub_category: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          item_name?: string
+          notes?: string
+          project_id: string
+          sub_category?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          item_name?: string
+          notes?: string
+          project_id?: string
+          sub_category?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indirect_cost_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      indirect_manpower_items: {
+        Row: {
+          amount: number
+          cost_code: string
+          created_at: string
+          id: string
+          location_type: string
+          manweeks: number
+          project_id: string
+          rate_per_week: number
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          cost_code?: string
+          created_at?: string
+          id?: string
+          location_type?: string
+          manweeks?: number
+          project_id: string
+          rate_per_week?: number
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          cost_code?: string
+          created_at?: string
+          id?: string
+          location_type?: string
+          manweeks?: number
+          project_id?: string
+          rate_per_week?: number
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indirect_manpower_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_items: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          notes: string
+          project_id: string
+          sub_category: string
+          supplier_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          notes?: string
+          project_id: string
+          sub_category?: string
+          supplier_name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          notes?: string
+          project_id?: string
+          sub_category?: string
+          supplier_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           cost_center_name: string
@@ -91,6 +418,91 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      service_items: {
+        Row: {
+          amount: number
+          created_at: string
+          discipline: string
+          id: string
+          project_id: string
+          service_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          discipline?: string
+          id?: string
+          project_id: string
+          service_name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          discipline?: string
+          id?: string
+          project_id?: string
+          service_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subcontractor_items: {
+        Row: {
+          amount: number
+          company_name: string
+          created_at: string
+          description: string
+          id: string
+          project_id: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          company_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          project_id: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          company_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcontractor_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
