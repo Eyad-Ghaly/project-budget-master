@@ -33,7 +33,7 @@ export function useProjectItems<T extends { id: string }>(
     if (error) {
       toast({ title: 'خطأ في تحميل البيانات', description: error.message, variant: 'destructive' });
     } else {
-      setItems((data as T[]) || []);
+      setItems((data as unknown as T[]) || []);
     }
     setLoading(false);
   }, [projectId, tableName]);
