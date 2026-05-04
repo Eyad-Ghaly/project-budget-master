@@ -1,10 +1,11 @@
 import { useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard, FolderPlus, Settings, FileText, BarChart3,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, LogOut,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
