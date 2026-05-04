@@ -1,20 +1,99 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
-import { mockProjects, getMockSummary } from '@/data/mockData';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useProjectItems } from '@/hooks/useProjectItems';
 import { SummaryPanel } from '@/components/SummaryPanel';
-import { COST_CATEGORIES } from '@/types/project';
+import { calculateSummary } from '@/types/project';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Download, FileText } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Plus, Trash2, Save, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const tabKeys = ['summary', 'materials', 'subcontractors', 'direct-manpower', 'direct-equipment', 'services', 'indirect-manpower', 'indirect-cost', 'boq'] as const;
 const tabLabels = ['Summary', 'Materials', 'Subcontractors', 'Direct Manpower', 'Direct Equipment', 'Services', 'Indirect Manpower', 'Indirect Cost', 'BOQ'];
 
+interface DBProject {
+  id: string;
+  cost_center_number: string;
+  cost_center_name: string;
+  project_name: string;
+  revision_number: number;
+  revision_date: string;
+  currency: string;
+  project_revenue: number;
+  pm_target: number;
+  om_target: number;
+  md_target: number;
+  status: string;
+  materials: number;
+  subcontractors: number;
+  direct_manpower: number;
+  direct_equipment: number;
+  services: number;
+  indirect_manpower: number;
+  indirect_cost: number;
+  overheads: number;
+}
+
 export default function ProjectDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>('summary');
-  const project = mockProjects.find(p => p.id === id) || mockProjects[0];
-  const summary = getMockSummary(project.id);
+  const [project, setProject] = useState<DBProject | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const userId = user?.id;
+
+  const fetchProject = useCallback(async () => {
+    if (!id) return;
+    const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
+    if (error) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+    } else {
+      setProject(data as unknown as DBProject);
+    }
+    setLoading(false);
+  }, [id]);
+
+  useEffect(() => { fetchProject(); }, [fetchProject]);
+
+  // Item hooks for each category
+  const materials = useProjectItems<any>('material_items', id, userId);
+  const subs = useProjectItems<any>('subcontractor_items', id, userId);
+  const dManpower = useProjectItems<any>('direct_manpower_items', id, userId);
+  const dEquip = useProjectItems<any>('direct_equipment_items', id, userId);
+  const services = useProjectItems<any>('service_items', id, userId);
+  const iManpower = useProjectItems<any>('indirect_manpower_items', id, userId);
+  const iCost = useProjectItems<any>('indirect_cost_items', id, userId);
+  const boq = useProjectItems<any>('boq_items', id, userId);
+
+  // Update project totals whenever items change
+  useEffect(() => {
+    if (!id || !project) return;
+    const updates = {
+      materials: materials.totalAmount,
+      subcontractors: subs.totalAmount,
+      direct_manpower: dManpower.totalAmount,
+      direct_equipment: dEquip.totalAmount,
+      services: services.totalAmount,
+      indirect_manpower: iManpower.totalAmount,
+      indirect_cost: iCost.totalAmount,
+    };
+    supabase.from('projects').update(updates).eq('id', id).then(() => {
+      setProject(prev => prev ? { ...prev, ...updates } : prev);
+    });
+  }, [materials.totalAmount, subs.totalAmount, dManpower.totalAmount, dEquip.totalAmount, services.totalAmount, iManpower.totalAmount, iCost.totalAmount]);
+
+  if (loading) return <div className="p-6 text-muted-foreground">جاري التحميل...</div>;
+  if (!project) return <div className="p-6 text-destructive">المشروع غير موجود</div>;
+
+  const summary = calculateSummary(
+    materials.totalAmount, subs.totalAmount, dManpower.totalAmount,
+    dEquip.totalAmount, services.totalAmount, iManpower.totalAmount,
+    iCost.totalAmount, project.overheads, project.project_revenue
+  );
 
   return (
     <div className="p-6 max-w-[1600px] space-y-6">
@@ -33,12 +112,10 @@ export default function ProjectDetail() {
         </div>
         <div className="flex gap-2">
           <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-muted text-muted-foreground hover:bg-muted/80 transition-colors">
-            <Download className="w-4 h-4" />
-            Export Excel
+            <Download className="w-4 h-4" /> Export Excel
           </button>
           <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-muted text-muted-foreground hover:bg-muted/80 transition-colors">
-            <FileText className="w-4 h-4" />
-            Export PDF
+            <FileText className="w-4 h-4" /> Export PDF
           </button>
         </div>
       </div>
@@ -46,16 +123,10 @@ export default function ProjectDetail() {
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto pb-2">
         {tabKeys.map((tab, i) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
-              activeTab === tab
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-muted'
-            )}
-          >
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className={cn('px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
+              activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+            )}>
             {tabLabels[i]}
           </button>
         ))}
@@ -64,74 +135,117 @@ export default function ProjectDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           {activeTab === 'summary' && <SummaryTable summary={summary} currency={project.currency} />}
-          {activeTab === 'materials' && <CostCategoryTable title="Materials" currency={project.currency} columns={['Sub-Category', 'Supplier', 'Description', 'Amount']} rows={[
-            ['General Requirements', '—', 'General site requirements', '12,500,000'],
-            ['Schneider Materials', 'Schneider Electric', 'MV/LV Switchgear', '18,000,000'],
-            ['Cables', 'Elsewedy', 'MV & LV Cables', '8,500,000'],
-            ['Conduits & Race Ways', 'Local Supplier', 'Cable trays & conduits', '3,500,000'],
-          ]} />}
-          {activeTab === 'subcontractors' && <CostCategoryTable title="Subcontractors" currency={project.currency} columns={['Type', 'Company', 'Description', 'Amount']} rows={[
-            ['ELECTRICAL', 'EPC Contracting', 'Electrical Installation', '10,500,000'],
-            ['MECHANICAL', 'MechPro', 'HVAC & Plumbing', '5,250,000'],
-            ['CIVIL', 'BuildCo', 'Civil Works', '3,000,000'],
-          ]} />}
-          {activeTab === 'direct-manpower' && <CostCategoryTable title="Direct Manpower" currency={project.currency} columns={['Discipline', 'Role', 'Man-weeks', 'Rate/Week', 'Amount']} rows={[
-            ['ELECTRICAL', 'Senior Electrician', '48', '3,500', '168,000'],
-            ['ELECTRICAL', 'Electrician', '96', '2,200', '211,200'],
-            ['COMMUNICATION', 'Comm. Technician', '32', '2,800', '89,600'],
-          ]} />}
-          {activeTab === 'direct-equipment' && <CostCategoryTable title="Direct Equipment" currency={project.currency} columns={['Discipline', 'Equipment', 'Qty', 'Unit', 'Unit Cost', 'Amount']} rows={[
-            ['ELECTRICAL', 'Cable Pulling Machine', '2', 'Set', '150,000', '300,000'],
-            ['ELECTRICAL', 'Crane 50T', '1', 'Month', '85,000', '85,000'],
-          ]} />}
-          {activeTab === 'services' && <CostCategoryTable title="Services" currency={project.currency} columns={['Discipline', 'Service', 'Amount']} rows={[
-            ['ELECTRICAL', 'Testing & Commissioning', '1,200,000'],
-            ['MECHANICAL', 'HVAC Testing', '500,000'],
-          ]} />}
-          {activeTab === 'indirect-manpower' && <CostCategoryTable title="Indirect Manpower" currency={project.currency} columns={['Location', 'Role', 'Cost Code', 'Man-weeks', 'Rate/Week', 'Amount']} rows={[
-            ['ONSITE', 'Site Manager', '101016', '52', '8,500', '442,000'],
-            ['ONSITE', 'Construction Manager', '101016', '52', '7,200', '374,400'],
-            ['ONSITE', 'QC Manager', '101026', '48', '5,500', '264,000'],
-            ['OFFSITE', 'Project Manager', '101016', '52', '9,000', '468,000'],
-            ['OFFSITE', 'Project Engineer', '101026', '52', '5,000', '260,000'],
-          ]} />}
-          {activeTab === 'indirect-cost' && <CostCategoryTable title="Indirect Cost" currency={project.currency} columns={['Sub-Category', 'Item', 'Amount', 'Notes']} rows={[
-            ['Main Office Facilities', 'Office Rent', '240,000', '12 months'],
-            ['Accommodation Facilities', 'Staff Housing', '480,000', '20 rooms'],
-            ['Transportation', 'Vehicles', '360,000', '6 vehicles'],
-            ['Insurance', 'Project Insurance', '850,000', 'CAR Policy'],
-            ['HSSE', 'Safety Equipment', '120,000', ''],
-          ]} />}
+
+          {activeTab === 'materials' && (
+            <EditableTable
+              title="Materials" hook={materials} userId={userId}
+              columns={[
+                { key: 'sub_category', label: 'Sub-Category', type: 'text' },
+                { key: 'supplier_name', label: 'Supplier', type: 'text' },
+                { key: 'description', label: 'Description', type: 'text' },
+                { key: 'amount', label: 'Amount', type: 'number' },
+              ]}
+              currency={project.currency}
+            />
+          )}
+
+          {activeTab === 'subcontractors' && (
+            <EditableTable
+              title="Subcontractors" hook={subs} userId={userId}
+              columns={[
+                { key: 'type', label: 'Type', type: 'text' },
+                { key: 'company_name', label: 'Company', type: 'text' },
+                { key: 'description', label: 'Description', type: 'text' },
+                { key: 'amount', label: 'Amount', type: 'number' },
+              ]}
+              currency={project.currency}
+            />
+          )}
+
+          {activeTab === 'direct-manpower' && (
+            <EditableTable
+              title="Direct Manpower" hook={dManpower} userId={userId}
+              columns={[
+                { key: 'discipline', label: 'Discipline', type: 'text' },
+                { key: 'role', label: 'Role', type: 'text' },
+                { key: 'manweeks', label: 'Man-weeks', type: 'number' },
+                { key: 'rate_per_week', label: 'Rate/Week', type: 'number' },
+                { key: 'amount', label: 'Amount', type: 'number' },
+              ]}
+              currency={project.currency}
+            />
+          )}
+
+          {activeTab === 'direct-equipment' && (
+            <EditableTable
+              title="Direct Equipment" hook={dEquip} userId={userId}
+              columns={[
+                { key: 'discipline', label: 'Discipline', type: 'text' },
+                { key: 'equipment_name', label: 'Equipment', type: 'text' },
+                { key: 'quantity', label: 'Qty', type: 'number' },
+                { key: 'unit', label: 'Unit', type: 'text' },
+                { key: 'unit_cost', label: 'Unit Cost', type: 'number' },
+                { key: 'amount', label: 'Amount', type: 'number' },
+              ]}
+              currency={project.currency}
+            />
+          )}
+
+          {activeTab === 'services' && (
+            <EditableTable
+              title="Services" hook={services} userId={userId}
+              columns={[
+                { key: 'discipline', label: 'Discipline', type: 'text' },
+                { key: 'service_name', label: 'Service', type: 'text' },
+                { key: 'amount', label: 'Amount', type: 'number' },
+              ]}
+              currency={project.currency}
+            />
+          )}
+
+          {activeTab === 'indirect-manpower' && (
+            <EditableTable
+              title="Indirect Manpower" hook={iManpower} userId={userId}
+              columns={[
+                { key: 'location_type', label: 'Location', type: 'text' },
+                { key: 'role', label: 'Role', type: 'text' },
+                { key: 'cost_code', label: 'Cost Code', type: 'text' },
+                { key: 'manweeks', label: 'Man-weeks', type: 'number' },
+                { key: 'rate_per_week', label: 'Rate/Week', type: 'number' },
+                { key: 'amount', label: 'Amount', type: 'number' },
+              ]}
+              currency={project.currency}
+            />
+          )}
+
+          {activeTab === 'indirect-cost' && (
+            <EditableTable
+              title="Indirect Cost" hook={iCost} userId={userId}
+              columns={[
+                { key: 'sub_category', label: 'Sub-Category', type: 'text' },
+                { key: 'item_name', label: 'Item', type: 'text' },
+                { key: 'amount', label: 'Amount', type: 'number' },
+                { key: 'notes', label: 'Notes', type: 'text' },
+              ]}
+              currency={project.currency}
+            />
+          )}
+
           {activeTab === 'boq' && (
-            <div className="glass-panel rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-border">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Bill of Quantities</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-border text-muted-foreground uppercase tracking-wider">
-                      {['Block', 'Code', 'Description', 'Unit', 'Qty', 'Supply', 'Logistics', 'Construction', 'Manpower', 'Equipment', 'Selling Price'].map(h => (
-                        <th key={h} className="p-2 font-medium text-left whitespace-nowrap">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      ['A1', 'A1.1', 'MV Switchgear Panel', 'Set', '4', '2,400,000', '120,000', '480,000', '96,000', '48,000', '3,600,000'],
-                      ['A1', 'A1.2', 'LV Main Distribution Board', 'Set', '8', '1,600,000', '80,000', '320,000', '64,000', '32,000', '2,400,000'],
-                      ['B1', 'B1.1', 'Cable Tray System', 'm', '2500', '625,000', '31,250', '187,500', '125,000', '62,500', '1,200,000'],
-                    ].map((row, i) => (
-                      <tr key={i} className="border-b border-border/30 hover:bg-muted/20">
-                        {row.map((cell, j) => (
-                          <td key={j} className={cn('p-2', j >= 4 && 'tabular-nums text-right')}>{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <EditableTable
+              title="Bill of Quantities" hook={boq} userId={userId}
+              columns={[
+                { key: 'block', label: 'Block', type: 'text' },
+                { key: 'item_code', label: 'Code', type: 'text' },
+                { key: 'description', label: 'Description', type: 'text' },
+                { key: 'unit', label: 'Unit', type: 'text' },
+                { key: 'quantity', label: 'Qty', type: 'number' },
+                { key: 'supply_materials', label: 'Supply', type: 'number' },
+                { key: 'logistics', label: 'Logistics', type: 'number' },
+                { key: 'selling_price', label: 'Selling Price', type: 'number' },
+              ]}
+              currency={project.currency}
+            />
           )}
         </div>
 
@@ -143,6 +257,7 @@ export default function ProjectDetail() {
   );
 }
 
+// --- Summary Table ---
 function SummaryTable({ summary, currency }: { summary: any; currency: string }) {
   const fmt = (v: number) => formatCurrency(v, currency);
   const categories = [
@@ -204,37 +319,156 @@ function SummaryTable({ summary, currency }: { summary: any; currency: string })
   );
 }
 
-function CostCategoryTable({ title, currency, columns, rows }: {
-  title: string; currency: string; columns: string[]; rows: string[][];
-}) {
+// --- Editable Table Component ---
+interface ColDef {
+  key: string;
+  label: string;
+  type: 'text' | 'number';
+}
+
+interface EditableTableProps {
+  title: string;
+  hook: ReturnType<typeof useProjectItems>;
+  userId: string | undefined;
+  columns: ColDef[];
+  currency: string;
+}
+
+function EditableTable({ title, hook, userId, columns, currency }: EditableTableProps) {
+  const { items, loading, addItem, updateItem, deleteItem, totalAmount } = hook;
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Record<string, any>>({});
+  const [adding, setAdding] = useState(false);
+  const [newData, setNewData] = useState<Record<string, any>>({});
+
+  const startEdit = (item: any) => {
+    setEditingId(item.id);
+    const data: Record<string, any> = {};
+    columns.forEach(c => { data[c.key] = item[c.key]; });
+    setEditData(data);
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    const success = await updateItem(editingId, editData);
+    if (success) setEditingId(null);
+  };
+
+  const startAdd = () => {
+    setAdding(true);
+    const data: Record<string, any> = {};
+    columns.forEach(c => { data[c.key] = c.type === 'number' ? 0 : ''; });
+    setNewData(data);
+  };
+
+  const saveNew = async () => {
+    await addItem(newData as any);
+    setAdding(false);
+  };
+
   return (
     <div className="glass-panel rounded-xl overflow-hidden">
       <div className="p-4 border-b border-border flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{title}</h3>
-        <button className="text-xs px-3 py-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-          + Add Item
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{title}</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            الإجمالي: <span className="tabular-nums font-semibold text-foreground">{formatCurrency(totalAmount, currency)}</span>
+          </p>
+        </div>
+        <button onClick={startAdd}
+          className="flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+          <Plus className="w-3 h-3" /> إضافة بند
         </button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-muted-foreground text-xs uppercase tracking-wider">
-              {columns.map(col => (
-                <th key={col} className="text-left p-3 font-medium">{col}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => (
-              <tr key={i} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer">
-                {row.map((cell, j) => (
-                  <td key={j} className={cn('p-3', j === row.length - 1 && 'tabular-nums text-right font-medium')}>{cell}</td>
+
+      {loading ? (
+        <div className="p-6 text-center text-muted-foreground text-sm">جاري التحميل...</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground text-xs uppercase tracking-wider">
+                {columns.map(col => (
+                  <th key={col.key} className={cn('p-3 font-medium', col.type === 'number' ? 'text-right' : 'text-left')}>{col.label}</th>
                 ))}
+                <th className="p-3 font-medium text-center w-20">إجراءات</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {items.map((item: any) => (
+                <tr key={item.id} className="border-b border-border/30 hover:bg-muted/20 group">
+                  {columns.map(col => (
+                    <td key={col.key} className={cn('p-3', col.type === 'number' && 'tabular-nums text-right font-medium')}>
+                      {editingId === item.id ? (
+                        <input
+                          type={col.type}
+                          value={editData[col.key] ?? ''}
+                          onChange={e => setEditData(prev => ({
+                            ...prev,
+                            [col.key]: col.type === 'number' ? Number(e.target.value) : e.target.value
+                          }))}
+                          className="w-full bg-muted/50 border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      ) : (
+                        <span className="cursor-pointer" onDoubleClick={() => startEdit(item)}>
+                          {col.type === 'number' ? formatCurrency(Number(item[col.key]) || 0, currency) : (item[col.key] || '—')}
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                  <td className="p-3 text-center">
+                    {editingId === item.id ? (
+                      <div className="flex gap-1 justify-center">
+                        <button onClick={saveEdit} className="p-1 text-primary hover:bg-primary/10 rounded"><Save className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground hover:bg-muted rounded"><X className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-1 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => startEdit(item)} className="p-1 text-primary hover:bg-primary/10 rounded text-xs">تعديل</button>
+                        <button onClick={() => deleteItem(item.id)} className="p-1 text-destructive hover:bg-destructive/10 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {/* Add new row */}
+              {adding && (
+                <tr className="border-b border-primary/30 bg-primary/5">
+                  {columns.map(col => (
+                    <td key={col.key} className="p-3">
+                      <input
+                        type={col.type}
+                        value={newData[col.key] ?? ''}
+                        placeholder={col.label}
+                        onChange={e => setNewData(prev => ({
+                          ...prev,
+                          [col.key]: col.type === 'number' ? Number(e.target.value) : e.target.value
+                        }))}
+                        className="w-full bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </td>
+                  ))}
+                  <td className="p-3 text-center">
+                    <div className="flex gap-1 justify-center">
+                      <button onClick={saveNew} className="p-1 text-primary hover:bg-primary/10 rounded"><Save className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setAdding(false)} className="p-1 text-muted-foreground hover:bg-muted rounded"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {items.length === 0 && !adding && (
+                <tr>
+                  <td colSpan={columns.length + 1} className="p-6 text-center text-muted-foreground text-sm">
+                    لا توجد بنود بعد. اضغط "إضافة بند" للبدء.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
