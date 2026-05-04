@@ -14,7 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      projects: {
+        Row: {
+          cost_center_name: string
+          cost_center_number: string
+          created_at: string
+          currency: string
+          direct_equipment: number
+          direct_manpower: number
+          id: string
+          indirect_cost: number
+          indirect_manpower: number
+          materials: number
+          md_target: number
+          om_target: number
+          overheads: number
+          pm_target: number
+          project_name: string
+          project_revenue: number
+          revision_date: string
+          revision_number: number
+          services: number
+          status: string
+          subcontractors: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost_center_name?: string
+          cost_center_number?: string
+          created_at?: string
+          currency?: string
+          direct_equipment?: number
+          direct_manpower?: number
+          id?: string
+          indirect_cost?: number
+          indirect_manpower?: number
+          materials?: number
+          md_target?: number
+          om_target?: number
+          overheads?: number
+          pm_target?: number
+          project_name?: string
+          project_revenue?: number
+          revision_date?: string
+          revision_number?: number
+          services?: number
+          status?: string
+          subcontractors?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost_center_name?: string
+          cost_center_number?: string
+          created_at?: string
+          currency?: string
+          direct_equipment?: number
+          direct_manpower?: number
+          id?: string
+          indirect_cost?: number
+          indirect_manpower?: number
+          materials?: number
+          md_target?: number
+          om_target?: number
+          overheads?: number
+          pm_target?: number
+          project_name?: string
+          project_revenue?: number
+          revision_date?: string
+          revision_number?: number
+          services?: number
+          status?: string
+          subcontractors?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
