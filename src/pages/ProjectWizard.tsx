@@ -19,7 +19,10 @@ const steps = [
 
 export default function ProjectWizard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     cost_center_number: '',
     cost_center_name: '',
