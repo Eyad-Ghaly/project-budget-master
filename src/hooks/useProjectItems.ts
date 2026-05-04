@@ -52,7 +52,7 @@ export function useProjectItems<T extends { id: string }>(
     }
     const newItem = data as unknown as T;
     setItems(prev => [...prev, newItem]);
-    return data as T;
+    return newItem;
   };
 
   const updateItem = async (id: string, updates: Partial<T>) => {
