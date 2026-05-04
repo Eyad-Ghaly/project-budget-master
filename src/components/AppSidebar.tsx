@@ -1,10 +1,11 @@
 import { useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard, FolderPlus, Settings, FileText, BarChart3,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, LogOut,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
@@ -15,6 +16,7 @@ const navItems = [
 export function AppSidebar() {
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { signOut } = useAuth();
 
   return (
     <aside
@@ -57,6 +59,15 @@ export function AppSidebar() {
           );
         })}
       </nav>
+
+      {/* Logout */}
+      <button
+        onClick={signOut}
+        className="flex items-center gap-3 px-3 py-2.5 mx-2 mb-2 rounded-md text-sm text-destructive hover:bg-destructive/10 transition-colors"
+      >
+        <LogOut className="w-4 h-4 shrink-0" />
+        {!collapsed && <span>تسجيل خروج</span>}
+      </button>
 
       {/* Collapse Toggle */}
       <button
