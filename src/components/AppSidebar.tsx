@@ -32,7 +32,7 @@ export function AppSidebar() {
         </div>
         {!collapsed && (
           <div className="animate-fade-in">
-            <p className="text-sm font-bold text-foreground tracking-tight">Elecon</p>
+            <p className="text-sm font-bold text-foreground tracking-tight">Atech</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Budget System</p>
           </div>
         )}

@@ -48,7 +48,7 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md glass-panel rounded-xl p-8 space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Elecon Budget</h1>
+          <h1 className="text-2xl font-bold text-foreground">Atech Budget</h1>
           <p className="text-sm text-muted-foreground mt-1">
             نظام إدارة ميزانية المشاريع
           </p>
