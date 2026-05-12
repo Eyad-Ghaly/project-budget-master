@@ -37,7 +37,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename="/project-budget-master/">
         <AuthProvider>
           <AppRoutes />
         </AuthProvider>
