@@ -11,8 +11,8 @@ import { cn } from '@/lib/utils';
 import { ArrowLeft, Download, FileText, Plus, Trash2, Save, X, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const tabKeys = ['summary', 'materials', 'subcontractors', 'direct-manpower', 'direct-equipment', 'services', 'indirect-manpower', 'indirect-cost', 'boq'] as const;
-const tabLabels = ['Summary', 'Materials', 'Subcontractors', 'Direct Manpower', 'Direct Equipment', 'Services', 'Indirect Manpower', 'Indirect Cost', 'BOQ'];
+const tabKeys = ['summary', 'materials', 'subcontractors', 'direct-manpower', 'direct-equipment', 'services', 'indirect-manpower', 'indirect-cost'] as const;
+const tabLabels = ['Summary', 'Materials', 'Subcontractors', 'Direct Manpower', 'Direct Equipment', 'Services', 'Indirect Manpower', 'Indirect Cost'];
 
 interface DBProject {
   id: string;
@@ -68,7 +68,7 @@ export default function ProjectDetail() {
   const services = useProjectItems<any>('service_items', id, userId);
   const iManpower = useProjectItems<any>('indirect_manpower_items', id, userId);
   const iCost = useProjectItems<any>('indirect_cost_items', id, userId);
-  const boq = useProjectItems<any>('boq_items', id, userId);
+
 
   // Update project totals whenever items change
   useEffect(() => {
@@ -231,23 +231,6 @@ export default function ProjectDetail() {
                 { key: 'item_name', label: 'Item', type: 'text' },
                 { key: 'amount', label: 'Amount', type: 'number' },
                 { key: 'notes', label: 'Notes', type: 'text' },
-              ]}
-              currency={project.currency}
-            />
-          )}
-
-          {activeTab === 'boq' && (
-            <EditableTable
-              title="Bill of Quantities" hook={boq} userId={userId}
-              columns={[
-                { key: 'block', label: 'Block', type: 'text' },
-                { key: 'item_code', label: 'Code', type: 'text' },
-                { key: 'description', label: 'Description', type: 'text' },
-                { key: 'unit', label: 'Unit', type: 'text' },
-                { key: 'quantity', label: 'Qty', type: 'number' },
-                { key: 'supply_materials', label: 'Supply', type: 'number' },
-                { key: 'logistics', label: 'Logistics', type: 'number' },
-                { key: 'selling_price', label: 'Selling Price', type: 'number' },
               ]}
               currency={project.currency}
             />
