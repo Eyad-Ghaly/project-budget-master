@@ -55,6 +55,19 @@ export function useProjectItems<T extends { id: string }>(
     return newItem;
   };
 
+  const addItems = async (newItems: Omit<T, 'id' | 'created_at' | 'updated_at'>[]) => {
+    if (!projectId || !userId || newItems.length === 0) return;
+    const payload = newItems.map(item => ({ ...item, project_id: projectId, user_id: userId })) as any;
+    const { data, error } = await supabase.from(tableName).insert(payload).select();
+    if (error) {
+      toast({ title: 'خطأ في استيراد البيانات', description: error.message, variant: 'destructive' });
+      return null;
+    }
+    const insertedItems = data as unknown as T[];
+    setItems(prev => [...prev, ...insertedItems]);
+    return insertedItems;
+  };
+
   const updateItem = async (id: string, updates: Partial<T>) => {
     const { error } = await supabase.from(tableName).update(updates as any).eq('id', id);
     if (error) {
@@ -77,5 +90,5 @@ export function useProjectItems<T extends { id: string }>(
 
   const totalAmount = items.reduce((sum, item: any) => sum + (Number(item.amount) || 0), 0);
 
-  return { items, loading, addItem, updateItem, deleteItem, fetchItems, totalAmount };
+  return { items, loading, addItem, addItems, updateItem, deleteItem, fetchItems, totalAmount };
 }

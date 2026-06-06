@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectItems } from '@/hooks/useProjectItems';
@@ -7,7 +8,7 @@ import { SummaryPanel } from '@/components/SummaryPanel';
 import { calculateSummary } from '@/types/project';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Download, FileText, Plus, Trash2, Save, X } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Plus, Trash2, Save, X, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const tabKeys = ['summary', 'materials', 'subcontractors', 'direct-manpower', 'direct-equipment', 'services', 'indirect-manpower', 'indirect-cost', 'boq'] as const;
@@ -339,11 +340,82 @@ interface EditableTableProps {
 }
 
 function EditableTable({ title, hook, userId, columns, currency }: EditableTableProps) {
-  const { items, loading, addItem, updateItem, deleteItem, totalAmount } = hook;
+  const { items, loading, addItem, addItems, updateItem, deleteItem, totalAmount } = hook;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Record<string, any>>({});
   const [adding, setAdding] = useState(false);
   const [newData, setNewData] = useState<Record<string, any>>({});
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [importHeaders, setImportHeaders] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const bstr = evt.target?.result;
+      const wb = XLSX.read(bstr, { type: 'binary' });
+      const wsname = wb.SheetNames[0];
+      const ws = wb.Sheets[wsname];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      
+      if (data.length > 0) {
+        const headers = (data[0] as string[]).map(h => h ? String(h).trim() : '');
+        const rows = data.slice(1).map((row: any) => {
+          const rowData: any = {};
+          headers.forEach((h, i) => { rowData[h] = row[i]; });
+          return rowData;
+        });
+
+        const mapping: Record<string, string> = {};
+        columns.forEach(col => {
+          const match = headers.find(h => 
+            h.toLowerCase() === col.label.toLowerCase() || 
+            h.toLowerCase() === col.key.toLowerCase() ||
+            h.toLowerCase().includes(col.label.toLowerCase().split(' ')[0])
+          );
+          if (match) mapping[col.key] = match;
+        });
+
+        setImportHeaders(headers.filter(Boolean));
+        setImportData(rows.filter(r => Object.keys(r).length > 0));
+        setColumnMapping(mapping);
+        setImportModalOpen(true);
+      }
+      
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const confirmImport = async () => {
+    const newItems = importData.map(row => {
+      const item: any = {};
+      columns.forEach(col => {
+        const excelHeader = columnMapping[col.key];
+        let val = excelHeader ? row[excelHeader] : undefined;
+        if (col.type === 'number') val = Number(val) || 0;
+        else val = val ? String(val) : '';
+        item[col.key] = val;
+      });
+
+      if (!item.amount && (item.quantity && (item.unit_price || item.unit_cost))) {
+         item.amount = (Number(item.quantity) || 0) * (Number(item.unit_price || item.unit_cost) || 0);
+      }
+      
+      return item;
+    });
+
+    if (newItems.length > 0 && addItems) {
+      await addItems(newItems);
+    }
+    setImportModalOpen(false);
+  };
 
   const startEdit = (item: any) => {
     setEditingId(item.id);
@@ -379,10 +451,17 @@ function EditableTable({ title, hook, userId, columns, currency }: EditableTable
             الإجمالي: <span className="tabular-nums font-semibold text-foreground">{formatCurrency(totalAmount, currency)}</span>
           </p>
         </div>
-        <button onClick={startAdd}
-          className="flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-          <Plus className="w-3 h-3" /> إضافة بند
-        </button>
+        <div className="flex gap-2">
+          <input type="file" accept=".xlsx,.xls,.csv" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+          <button onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors">
+            <Upload className="w-3 h-3" /> استيراد
+          </button>
+          <button onClick={startAdd}
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+            <Plus className="w-3 h-3" /> إضافة بند
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -483,12 +562,47 @@ function EditableTable({ title, hook, userId, columns, currency }: EditableTable
               {items.length === 0 && !adding && (
                 <tr>
                   <td colSpan={columns.length + 1} className="p-6 text-center text-muted-foreground text-sm">
-                    لا توجد بنود بعد. اضغط "إضافة بند" للبدء.
+                    لا توجد بنود بعد. اضغط "إضافة بند" أو "استيراد" للبدء.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {importModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="bg-card p-6 rounded-xl border border-border shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">ربط أعمدة الإكسيل (Column Mapping)</h2>
+            <p className="text-sm text-muted-foreground mb-6">يرجى التأكد من مطابقة أعمدة ملف الإكسيل مع أعمدة الجدول.</p>
+            
+            <div className="space-y-4 mb-6">
+              {columns.map(col => (
+                <div key={col.key} className="flex items-center gap-4">
+                  <div className="w-1/3 text-sm font-medium">{col.label}</div>
+                  <div className="w-2/3">
+                    <select
+                      value={columnMapping[col.key] || ''}
+                      onChange={e => setColumnMapping(prev => ({ ...prev, [col.key]: e.target.value }))}
+                      className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">-- تجاهل (لا تستورد) --</option>
+                      {importHeaders.map(h => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setImportModalOpen(false)} className="px-4 py-2 text-sm text-muted-foreground hover:bg-muted rounded">إلغاء</button>
+              <button onClick={confirmImport} className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded hover:opacity-90">تأكيد واستيراد ({importData.length} صف)</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
