@@ -29,8 +29,8 @@ export default function ProjectWizard() {
     <div className="p-6 max-w-[800px] mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">إنشاء مشروع جديد</h1>
-        <p className="text-sm text-muted-foreground mt-1">البيانات الأساسية للمشروع</p>
+        <h1 className="text-2xl font-bold">Create New Project</h1>
+        <p className="text-sm text-muted-foreground mt-1">Basic project information</p>
       </div>
 
       <div className="glass-panel rounded-xl p-6 space-y-5 animate-fade-in">
@@ -70,7 +70,7 @@ export default function ProjectWizard() {
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          إلغاء
+          Cancel
         </button>
         <button
           disabled={submitting}
@@ -93,16 +93,16 @@ export default function ProjectWizard() {
             
             setSubmitting(false);
             if (error) {
-              toast({ title: 'خطأ في الإنشاء', description: error.message, variant: 'destructive' });
+              toast({ title: 'Creation Error', description: error.message, variant: 'destructive' });
             } else if (data) {
-              toast({ title: 'تم إنشاء المشروع بنجاح' });
+              toast({ title: 'Project created successfully' });
               navigate(`/projects/${data.id}`);
             }
           }}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium disabled:opacity-50"
         >
           <Check className="w-4 h-4" />
-          {submitting ? 'جاري الإنشاء...' : 'إنشاء المشروع وبدء التفاصيل'}
+          {submitting ? 'Creating...' : 'Create Project & Add Details'}
         </button>
       </div>
     </div>

@@ -23,8 +23,14 @@ export interface MaterialItem {
   project_id: string;
   sub_category: string;
   supplier_name: string;
+  brand: string;
+  model_part_no: string;
   description: string;
-  amount_egp: number;
+  unit: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  required_date: string;
   notes: string;
 }
 

@@ -140,10 +140,14 @@ export default function ProjectDetail() {
             <EditableTable
               title="Materials" hook={materials} userId={userId}
               columns={[
-                { key: 'sub_category', label: 'Sub-Category', type: 'text' },
-                { key: 'supplier_name', label: 'Supplier', type: 'text' },
+                { key: 'brand', label: 'Brand', type: 'text' },
+                { key: 'model_part_no', label: 'Model Part No.', type: 'text' },
                 { key: 'description', label: 'Description', type: 'text' },
-                { key: 'amount', label: 'Amount', type: 'number' },
+                { key: 'unit', label: 'Unit', type: 'text' },
+                { key: 'quantity', label: 'Quantity', type: 'number' },
+                { key: 'unit_price', label: 'Unit Price', type: 'number' },
+                { key: 'amount', label: 'Total Cost', type: 'number' },
+                { key: 'required_date', label: 'Required Date', type: 'text' },
               ]}
               currency={project.currency}
             />
@@ -403,10 +407,19 @@ function EditableTable({ title, hook, userId, columns, currency }: EditableTable
                         <input
                           type={col.type}
                           value={editData[col.key] ?? ''}
-                          onChange={e => setEditData(prev => ({
-                            ...prev,
-                            [col.key]: col.type === 'number' ? Number(e.target.value) : e.target.value
-                          }))}
+                          onChange={e => {
+                            const val = col.type === 'number' ? Number(e.target.value) : e.target.value;
+                            setEditData(prev => {
+                              const next = { ...prev, [col.key]: val };
+                              if (col.key === 'quantity' || col.key === 'unit_price') {
+                                next.amount = (Number(next.quantity) || 0) * (Number(next.unit_price) || 0);
+                              }
+                              if (col.key === 'quantity' || col.key === 'unit_cost') {
+                                next.amount = (Number(next.quantity) || 0) * (Number(next.unit_cost) || 0);
+                              }
+                              return next;
+                            });
+                          }}
                           className="w-full bg-muted/50 border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       ) : (
@@ -441,10 +454,19 @@ function EditableTable({ title, hook, userId, columns, currency }: EditableTable
                         type={col.type}
                         value={newData[col.key] ?? ''}
                         placeholder={col.label}
-                        onChange={e => setNewData(prev => ({
-                          ...prev,
-                          [col.key]: col.type === 'number' ? Number(e.target.value) : e.target.value
-                        }))}
+                        onChange={e => {
+                          const val = col.type === 'number' ? Number(e.target.value) : e.target.value;
+                          setNewData(prev => {
+                            const next = { ...prev, [col.key]: val };
+                            if (col.key === 'quantity' || col.key === 'unit_price') {
+                              next.amount = (Number(next.quantity) || 0) * (Number(next.unit_price) || 0);
+                            }
+                            if (col.key === 'quantity' || col.key === 'unit_cost') {
+                              next.amount = (Number(next.quantity) || 0) * (Number(next.unit_cost) || 0);
+                            }
+                            return next;
+                          });
+                        }}
                         className="w-full bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
